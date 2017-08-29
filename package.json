@@ -1,0 +1,17 @@
+{
+  "name": "web-tools-static-site",
+  "version": "0.1.0",
+  "description": "Web-tools plugin for building and serving a static site based on a datastore, a set of compiled templates and a configuration file.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jayeb/web-tools-static-site"
+  },
+  "author": "Jason Eberle",
+  "license": "BSD",
+  "main": "tools/web-tools-static-site.js",
+  "dependencies": {
+    "lodash": "4.6.1",
+    "through2": "^2.0.1",
+    "vinyl": "^2.0.2",
+  }
+}
