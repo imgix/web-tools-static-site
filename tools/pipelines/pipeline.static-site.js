@@ -2,6 +2,7 @@ var _ = require('lodash'),
     fs = require('fs'),
     path = require('path'),
     through = require('through2'),
+    reporter = require('reporter-plus/lib/reporter'),
     Vinyl = require('vinyl');
 
 module.exports = function setupNunjucksPagesPipeline(gulp) {
@@ -73,6 +74,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
         },
       function flush(callback) {
           var stream = this,
+              errors = {},
               routeMap = {};
 
           _.each(pageList, function renderAndMapRoutes(pageOptions) {
@@ -83,15 +85,33 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
             template = _.get(templates, pageOptions.template);
 
             if (!_.isFunction(_.get(template, 'render'))) {
-              console.error('Template does not exist:', pageOptions.template);
+              errors[pageOptions.template] = [{
+                filename: _.last(pageOptions.template.split(path.sep)),
+                filepath: pageOptions.template,
+                reason: 'Template does not exist',
+                isError: true
+              }];
+
               return;
             }
 
             // Render and push to stream
-            renderedPage = template.render(pageOptions.data);
+            try {
+              renderedPage = template.render(pageOptions.data);
+            } catch (renderError) {
+              errors[pageOptions.template] = [{
+                filename: _.get(renderError, 'filename'),
+                filepath: _.get(renderError, 'filepath'),
+                line: _.get(renderError, 'line'),
+                char: _.get(renderError, 'char'),
+                reason: _.get(renderError, 'message'),
+                isError: true
+              }];
 
-            if (_.isNull(renderedPage)) {
-              console.error('Error rendering template:', pageOptions.template);
+              return;
+            }
+
+            if (_.isNull(renderedPage) || _.isUndefined(renderedPage)) {
               return;
             }
 
@@ -105,6 +125,10 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               routeMap[route] = pageOptions.filename;
             });
           });
+
+          if (!_.isEmpty(errors)) {
+            reporter(errors, 'static-site');
+          }
 
           if (_.isString(options.routeMap)) {
             fs.writeFileSync(options.routeMap, JSON.stringify(routeMap, null, 2));
