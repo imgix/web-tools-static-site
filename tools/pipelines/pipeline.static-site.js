@@ -83,11 +83,17 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
             template = _.get(templates, pageOptions.template);
 
             if (!_.isFunction(_.get(template, 'render'))) {
+              console.error('Template does not exist:', pageOptions.template);
               return;
             }
 
             // Render and push to stream
             renderedPage = template.render(pageOptions.data);
+
+            if (_.isNull(renderedPage)) {
+              console.error('Error rendering template:', pageOptions.template);
+              return;
+            }
 
             stream.push(new Vinyl({
               path: pageOptions.filename,
