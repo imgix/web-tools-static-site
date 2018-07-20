@@ -1,4 +1,5 @@
-var _ = require('lodash'),
+var argv = require('yargs').argv,
+    _ = require('lodash'),
     fs = require('fs'),
     path = require('path'),
     through = require('through2'),
@@ -21,7 +22,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
     options = _.defaults({}, options, {
       templates: 'templates',
       siteData: 'sitedata',
-      routeMap: './routes.json'
+      routeMap: './routes.json',
+      netlifyRouteRedirects: './_redirects'
     });
 
     // Attempt to get usable templates
@@ -132,6 +134,13 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
           if (_.isString(options.routeMap)) {
             fs.writeFileSync(options.routeMap, JSON.stringify(routeMap, null, 2));
+          }
+
+          // Make _redirects file for Netlify
+          if (argv.env === 'production') {
+            _.each(routeMap, function (filename, route) {
+              fs.appendFileSync(options.netlifyRouteRedirects, route + ' ' + filename + '\n');
+            });
           }
 
           callback();
