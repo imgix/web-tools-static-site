@@ -139,7 +139,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
           // Make _redirects file for Netlify
           if (argv.env === 'production') {
             _.each(routeMap, function (filename, route) {
-              fs.appendFileSync(options.netlifyRouteRedirects, route + ' ' + filename + '\n');
+              fs.appendFileSync(options.netlifyRouteRedirects, route + ' /' + filename + '\n');
             });
           }
 
