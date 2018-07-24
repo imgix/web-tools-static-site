@@ -21,7 +21,11 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
     options = _.defaults({}, options, {
       templates: 'templates',
       siteData: 'sitedata',
-      routeMap: './routes.json'
+      routeMaps: {
+          './routes.json': function (routeMap) {
+              return JSON.stringify(routeMap, null, 2);
+            }
+        }
     });
 
     // Attempt to get usable templates
@@ -75,8 +79,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
       function flush(callback) {
           var stream = this,
               errors = {},
-              routeMap = {},
-              renderedRouteMap;
+              routeMap = {};
 
           _.each(pageList, function renderAndMapRoutes(pageOptions) {
             var template,
@@ -131,15 +134,9 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
             reporter(errors, 'static-site');
           }
 
-          if (_.isString(options.routeMap)) {
-            if (_.isFunction(options.routeMapRenderer)) {
-              renderedRouteMap = options.routeMapRenderer(routeMap);
-            } else {
-              renderedRouteMap = JSON.stringify(routeMap, null, 2);
-            }
-
-            fs.writeFileSync(options.routeMap, renderedRouteMap);
-          }
+          _.each(options.routeMaps, function renderRouteMap(renderer, fileName) {
+            fs.writeFileSync(fileName, renderer(routeMap));
+          });
 
           callback();
         }
