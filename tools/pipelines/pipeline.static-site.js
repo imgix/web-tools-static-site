@@ -75,7 +75,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
       function flush(callback) {
           var stream = this,
               errors = {},
-              routeMap = {};
+              routeMap = {},
+              renderedRouteMap;
 
           _.each(pageList, function renderAndMapRoutes(pageOptions) {
             var template,
@@ -131,7 +132,13 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
           }
 
           if (_.isString(options.routeMap)) {
-            fs.writeFileSync(options.routeMap, JSON.stringify(routeMap, null, 2));
+            if (_.isFunction(options.routeMapRenderer)) {
+              renderedRouteMap = options.routeMapRenderer(routeMap);
+            } else {
+              renderedRouteMap = JSON.stringify(routeMap, null, 2);
+            }
+
+            fs.writeFileSync(options.routeMap, renderedRouteMap);
           }
 
           callback();
