@@ -21,7 +21,11 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
     options = _.defaults({}, options, {
       templates: 'templates',
       siteData: 'sitedata',
-      routeMap: './routes.json'
+      routeMaps: {
+          './routes.json': function (routeMap) {
+              return JSON.stringify(routeMap, null, 2);
+            }
+        }
     });
 
     // Attempt to get usable templates
@@ -130,9 +134,9 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
             reporter(errors, 'static-site');
           }
 
-          if (_.isString(options.routeMap)) {
-            fs.writeFileSync(options.routeMap, JSON.stringify(routeMap, null, 2));
-          }
+          _.each(options.routeMaps, function renderRouteMap(renderer, fileName) {
+            fs.writeFileSync(fileName, renderer(routeMap));
+          });
 
           callback();
         }
