@@ -6,7 +6,8 @@ var _ = require('lodash'),
 
 module.exports = function configureServer(app, config) {
   var routeMapFile = _.get(config, 'server.routeMap'),
-      fallbackFile = _.get(config, 'server.fallbackFile');
+      fallbackFile = _.get(config, 'server.fallbackFile'),
+      routeMap;
 
   function getRouteMap() {
     return JSON.parse(fs.readFileSync(path.join(config.destPath, routeMapFile)));
@@ -19,15 +20,25 @@ module.exports = function configureServer(app, config) {
 
   // If we're caching the route map, we can just use express.static
   if (_.get(config, 'server.cacheRouteMap')) {
-    _.each(getRouteMap(), function setupRoute(file, route) {
+    routeMap = getRouteMap();
+
+    _.each(routeMap.rewrites, function setupRoute(file, route) {
       app.use(route, express.static(path.join(config.destPath, file)));
+    });
+
+    _.each(routeMap.redirects, function setupRoute(redirect, route) {
+      app.use(route, function redirect(request, response, next) {
+        response.redirect(301, redirect);
+        next();
+      });
     });
 
   // If we're not caching the route map, check it on every request
   } else {
     app.use(function checkRoute(request, response, next) {
       var routeMap = getRouteMap(),
-          file = routeMap[request.url];
+          file = _.get(routeMap, 'rewrites["' + request.url + '"]'),
+          redirect = _.get(routeMap, 'redirects["' + request.url + '"]');
 
       if (!!file && fs.existsSync(path.join(config.destPath, file))) {
         response.sendFile(file, {
@@ -36,6 +47,8 @@ module.exports = function configureServer(app, config) {
               'Cache-Control': 'private, no-cache, max-age=0'
             }
         });
+      } else if (!!redirect) {
+        response.redirect(301, redirect);
       } else {
         next();
       }
