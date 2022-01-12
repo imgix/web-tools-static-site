@@ -11,8 +11,8 @@
   "main": "tools/web-tools-static-site.js",
   "dependencies": {
     "express": "^4.15.4",
-    "lodash": "4.6.1",
-    "reporter-plus": "github:jayeb/reporter-plus",
+    "lodash": "4.17.21",
+    "reporter-plus": "git+https://github.com/jayeb/reporter-plus.git",
     "through2": "^2.0.1",
     "vinyl": "^2.0.2"
   }
