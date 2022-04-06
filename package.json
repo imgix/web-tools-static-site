@@ -1,6 +1,6 @@
 {
   "name": "web-tools-static-site",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Web-tools plugin for building and serving a static site based on a datastore, a set of compiled templates and a configuration file.",
   "repository": {
     "type": "git",
