@@ -1,22 +1,36 @@
+const { isBuffer } = require('lodash');
 var _ = require('lodash'),
     fs = require('fs'),
     path = require('path'),
+    fetch = require('node-fetch'),
     through = require('through2'),
     reporter = require('reporter-plus/lib/reporter'),
-    Vinyl = require('vinyl');
+    Vinyl = require('vinyl'),
+    path = require('path'),
+    asyncDash = require('async-dash');
 
 module.exports = function setupNunjucksPagesPipeline(gulp) {
   var PAGE_OPTIONS = {
     data: _.isObject,
     template: _.isString,
     routes: _.isArray,
-    filename: _.isString
+    filename: _.isString,
+    priority: _.isNumber
   };
 
   return function nunjucksPagesPipeline(options) {
     var pageList = [],
         templates,
-        siteData;
+        siteData,
+        {
+          repo,
+          accessToken,
+          contentBase,
+          siteBase,
+          templatesDir,
+          templatesSubDirArray
+        } = options.repoInfo,
+        jobScoreURL = 'https://careers.jobscore.com/jobs/imgix/feed.json';
 
     options = _.defaults({}, options, {
       templates: 'templates',
@@ -76,12 +90,13 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
           callback();
         },
-      function flush(callback) {
+      async function flush(callback) {
           var stream = this,
               errors = {},
-              routeMap = {};
-
-          _.each(pageList, function renderAndMapRoutes(pageOptions) {
+              routeMap = {},
+              templatesSubDir = {};
+          
+          await asyncDash.asyncEach(pageList, async function renderAndMapRoutes(pageOptions) {
             var template,
                 renderedPage;
 
@@ -118,7 +133,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
             if (_.isNull(renderedPage) || _.isUndefined(renderedPage)) {
               return;
             }
-
+            
             stream.push(new Vinyl({
               path: pageOptions.filename,
               contents: new Buffer(renderedPage)
@@ -132,6 +147,68 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 _.set(routeMap, 'redirects["' + route + '"]', _.first(pageOptions.routes));
               }
             });
+
+
+            var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
+            contentPath = contentBase.concat('/', pageOptions.data.contentDirectory ?? pageOptions.data.content?.contentDirectory),
+            templatePathArray = [siteBase, templatesDir],
+            templatePath,
+            apiPath = (path) => baseAPIPath + `?path=${path}`,
+            lastModDates = [],
+            hasContentFile = pageOptions.data.contentDirectory || (pageOptions.data.content?.contentDirectory);
+
+            if(templatesSubDirArray) {
+              for(let subDir of templatesSubDirArray) {
+                if(templatesSubDir[pageOptions.template]) {
+                  continue;
+                } else if (pageOptions.template.indexOf(subDir) > 0){
+                  templatesSubDir[pageOptions.template] = subDir;
+                }
+              }
+
+              templatePathArray.push(templatesSubDir[pageOptions.template]);
+              templatePathArray.push(pageOptions.template)
+            }
+
+            templatePath = templatePathArray.join('/');
+
+            if(pageOptions.routes[0] === ('/careers')) {
+              await fetch(jobScoreURL)
+              .then(data => data.json())
+              .then((jobsData) => {
+                lastModDates.push(jobsData.last_updated);
+              })
+              .catch(function onError(error) {
+                console.log('Error fetching from ' + jobScoreURL + ':', error);
+              });
+            }
+
+            if(hasContentFile) {
+              await fetch(apiPath(contentPath), {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+              })
+              .then(data => data.json())
+              .then((commit) => {
+                lastModDates.push(commit[0].commit.committer.date);
+              })
+              .catch(function onError(error) {
+                console.log('Error fetching from ' + apiPath(contentPath) + ':', error);
+              });
+            }
+
+            await fetch(apiPath(templatePath), {
+              headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+            .then(data => data.json())
+            .then((commit) => {
+              lastModDates.push(commit[0].commit.committer.date);
+              _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate));
+            })
+            .catch(function onError(error) {
+              console.log('Error fetching from ' + apiPath(templatePath) + ':', error);
+            });
+
+            _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][priority]', pageOptions.priority);
           });
 
           if (!_.isEmpty(errors)) {
