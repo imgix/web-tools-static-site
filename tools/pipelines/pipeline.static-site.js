@@ -150,13 +150,14 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
 
             var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
-            contentPath = contentBase.concat('/', pageOptions.data.contentDirectory ?? pageOptions.data.content?.contentDirectory),
+            contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
+            contentPath,
             templatePathArray = [siteBase, templatesDir],
             templatePath,
             apiPath = (path) => baseAPIPath + `?path=${path}`,
-            lastModDates = [],
-            hasContentFile = pageOptions.data.contentDirectory || (pageOptions.data.content?.contentDirectory);
+            lastModDates = [];
 
+            // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
             if(templatesSubDirArray) {
               for(let subDir of templatesSubDirArray) {
                 if(templatesSubDir[pageOptions.template]) {
@@ -166,12 +167,12 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 }
               }
 
-              templatePathArray.push(templatesSubDir[pageOptions.template]);
-              templatePathArray.push(pageOptions.template)
+              templatePathArray.push(templatesSubDir[pageOptions.template], pageOptions.template);
             }
 
             templatePath = templatePathArray.join('/');
 
+            // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
             if(pageOptions.routes[0] === ('/careers')) {
               await fetch(jobScoreURL)
               .then(data => data.json())
@@ -183,7 +184,9 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               });
             }
 
-            if(hasContentFile) {
+            if(contentFile) {
+              contentPath = contentBase.concat('/', contentFile)
+
               await fetch(apiPath(contentPath), {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
               })
