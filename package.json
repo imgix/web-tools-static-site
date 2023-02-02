@@ -16,6 +16,7 @@
     "node-fetch": "^2.6.0",
     "reporter-plus": "git+https://github.com/jayeb/reporter-plus.git",
     "through2": "^2.0.1",
-    "vinyl": "^2.0.2"
+    "vinyl": "^2.0.2",
+    "yargs": "^17.6.2"
   }
 }

@@ -7,7 +7,8 @@ var _ = require('lodash'),
     reporter = require('reporter-plus/lib/reporter'),
     Vinyl = require('vinyl'),
     path = require('path'),
-    asyncDash = require('async-dash');
+    asyncDash = require('async-dash'),
+    args = require('yargs').argv;
 
 module.exports = function setupNunjucksPagesPipeline(gulp) {
   var PAGE_OPTIONS = {
@@ -148,70 +149,71 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               }
             });
 
+            if(!!args.generate) {
+              var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
+              contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
+              contentPath,
+              templatePathArray = [siteBase, templatesDir],
+              templatePath,
+              apiPath = (path) => baseAPIPath + `?path=${path}`,
+              lastModDates = [];
 
-            var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
-            contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
-            contentPath,
-            templatePathArray = [siteBase, templatesDir],
-            templatePath,
-            apiPath = (path) => baseAPIPath + `?path=${path}`,
-            lastModDates = [];
-
-            // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
-            if(templatesSubDirArray) {
-              for(let subDir of templatesSubDirArray) {
-                if(templatesSubDir[pageOptions.template]) {
-                  continue;
-                } else if (pageOptions.template.indexOf(subDir) > 0){
-                  templatesSubDir[pageOptions.template] = subDir;
+              // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
+              if(templatesSubDirArray) {
+                for(let subDir of templatesSubDirArray) {
+                  if(templatesSubDir[pageOptions.template]) {
+                    continue;
+                  } else if (pageOptions.template.indexOf(subDir) > 0){
+                    templatesSubDir[pageOptions.template] = subDir;
+                  }
                 }
+
+                templatePathArray.push(templatesSubDir[pageOptions.template], pageOptions.template);
               }
 
-              templatePathArray.push(templatesSubDir[pageOptions.template], pageOptions.template);
-            }
+              templatePath = templatePathArray.join('/');
 
-            templatePath = templatePathArray.join('/');
+              // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
+              if(pageOptions.routes[0] === ('/careers')) {
+                await fetch(jobScoreURL)
+                .then(data => data.json())
+                .then((jobsData) => {
+                  lastModDates.push(jobsData.last_updated);
+                })
+                .catch(function onError(error) {
+                  console.log('Error fetching from ' + jobScoreURL + ':', error);
+                });
+              }
 
-            // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
-            if(pageOptions.routes[0] === ('/careers')) {
-              await fetch(jobScoreURL)
-              .then(data => data.json())
-              .then((jobsData) => {
-                lastModDates.push(jobsData.last_updated);
-              })
-              .catch(function onError(error) {
-                console.log('Error fetching from ' + jobScoreURL + ':', error);
-              });
-            }
+              if(contentFile) {
+                contentPath = contentBase.concat('/', contentFile)
 
-            if(contentFile) {
-              contentPath = contentBase.concat('/', contentFile)
+                await fetch(apiPath(contentPath), {
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                .then(data => data.json())
+                .then((commit) => {
+                  lastModDates.push(commit[0].commit.committer.date);
+                })
+                .catch(function onError(error) {
+                  console.log('Error fetching from ' + apiPath(contentPath) + ':', error);
+                });
+              }
 
-              await fetch(apiPath(contentPath), {
+              await fetch(apiPath(templatePath), {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
               })
               .then(data => data.json())
               .then((commit) => {
                 lastModDates.push(commit[0].commit.committer.date);
+                _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate));
               })
               .catch(function onError(error) {
-                console.log('Error fetching from ' + apiPath(contentPath) + ':', error);
+                console.log('Error fetching from ' + apiPath(templatePath) + ':', error);
               });
+
+              _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][priority]', pageOptions.priority);
             }
-
-            await fetch(apiPath(templatePath), {
-              headers: { 'Authorization': `Bearer ${accessToken}` }
-            })
-            .then(data => data.json())
-            .then((commit) => {
-              lastModDates.push(commit[0].commit.committer.date);
-              _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate));
-            })
-            .catch(function onError(error) {
-              console.log('Error fetching from ' + apiPath(templatePath) + ':', error);
-            });
-
-            _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][priority]', pageOptions.priority);
           });
 
           if (!_.isEmpty(errors)) {
