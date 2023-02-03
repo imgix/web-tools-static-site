@@ -159,11 +159,11 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 lastModDates = [];
 
               // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
-              if(templatesSubDirArray) {
-                for(let subDir of templatesSubDirArray) {
-                  if(templatesSubDir[pageOptions.template]) {
+              if (templatesSubDirArray) {
+                for (let subDir of templatesSubDirArray) {
+                  if (templatesSubDir[pageOptions.template]) {
                     continue;
-                  } else if (pageOptions.template.indexOf(subDir) > 0){
+                  } else if (pageOptions.template.indexOf(subDir) > 0) {
                     templatesSubDir[pageOptions.template] = subDir;
                   }
                 }
