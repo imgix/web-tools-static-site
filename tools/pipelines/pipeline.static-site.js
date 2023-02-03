@@ -151,12 +151,12 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
             if(!!args.generate) {
               var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
-              contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
-              contentPath,
-              templatePathArray = [siteBase, templatesDir],
-              templatePath,
-              apiPath = (path) => baseAPIPath + `?path=${path}`,
-              lastModDates = [];
+                contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
+                contentPath,
+                templatePathArray = [siteBase, templatesDir],
+                templatePath,
+                apiPath = (path) => baseAPIPath + `?path=${path}`,
+                lastModDates = [];
 
               // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
               if(templatesSubDirArray) {
