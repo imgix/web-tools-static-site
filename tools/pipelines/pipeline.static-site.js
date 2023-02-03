@@ -176,13 +176,13 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
               if(pageOptions.routes[0] === ('/careers')) {
                 await fetch(jobScoreURL)
-                .then(data => data.json())
-                .then((jobsData) => {
-                  lastModDates.push(jobsData.last_updated);
-                })
-                .catch(function onError(error) {
-                  console.log('Error fetching from ' + jobScoreURL + ':', error);
-                });
+                  .then(data => data.json())
+                  .then((jobsData) => {
+                    lastModDates.push(jobsData.last_updated);
+                  })
+                  .catch(function onError(error) {
+                    console.log('Error fetching from ' + jobScoreURL + ':', error);
+                  });
               }
 
               if(contentFile) {
