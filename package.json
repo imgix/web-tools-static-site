@@ -1,6 +1,6 @@
 {
   "name": "web-tools-static-site",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Web-tools plugin for building and serving a static site based on a datastore, a set of compiled templates and a configuration file.",
   "repository": {
     "type": "git",
@@ -10,10 +10,13 @@
   "license": "BSD",
   "main": "tools/web-tools-static-site.js",
   "dependencies": {
+    "async-dash": "^1.0.4",
     "express": "^4.15.4",
     "lodash": "4.17.21",
+    "node-fetch": "^2.6.0",
     "reporter-plus": "git+https://github.com/jayeb/reporter-plus.git",
     "through2": "^2.0.1",
-    "vinyl": "^2.0.2"
+    "vinyl": "^2.0.2",
+    "yargs": "^17.6.2"
   }
 }
