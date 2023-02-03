@@ -174,7 +174,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               templatePath = templatePathArray.join('/');
 
               // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
-              if(pageOptions.routes[0] === ('/careers')) {
+              if (pageOptions.routes[0] === ('/careers')) {
                 await fetch(jobScoreURL)
                   .then(data => data.json())
                   .then((jobsData) => {
