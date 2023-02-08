@@ -149,9 +149,9 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               }
             });
 
-            if(!!args.generate) {
+            if(!!args.generate && pageOptions.routes[0][0] !== '#') {
               var baseAPIPath = `https://api.github.com/repos/zebrafishlabs/${repo}/commits`,
-                contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory,
+                contentFile = pageOptions.data.contentDirectory || pageOptions.data.content?.contentDirectory || pageOptions.data.post?.contentDirectory,
                 contentPath,
                 templatePathArray = [siteBase, templatesDir],
                 templatePath,
