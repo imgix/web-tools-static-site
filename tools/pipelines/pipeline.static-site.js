@@ -16,7 +16,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
     template: _.isString,
     routes: _.isArray,
     filename: _.isString,
-    priority: _.isNumber
+    priority: _.isNumber,
+    lastModDate: _.isDate
   };
 
   return function nunjucksPagesPipeline(options) {
@@ -158,6 +159,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 apiPath = (path) => baseAPIPath + `?path=${path}`,
                 lastModDates = [];
 
+              if (pageOptions.lastModDate) lastModDates.push(pageOptions.lastModDate);
+
               // Matches template name to template's sub directory. Make sure the subdirectory matches template name in repo
               if (templatesSubDirArray) {
                 for (let subDir of templatesSubDirArray) {
@@ -185,7 +188,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                   });
               }
 
-              if(contentFile) {
+              if(contentFile && !pageOptions.lastModDate) {
                 contentPath = contentBase.concat('/', contentFile)
 
                 await fetch(apiPath(contentPath), {
@@ -193,7 +196,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 })
                 .then(data => data.json())
                 .then((commit) => {
-                  lastModDates.push(commit[0].commit.committer.date);
+                  lastModDates.push(new Date(commit[0].commit.committer.date));
                 })
                 .catch(function onError(error) {
                   console.log('Error fetching from ' + apiPath(contentPath) + ':', error);
@@ -205,8 +208,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               })
               .then(data => data.json())
               .then((commit) => {
-                lastModDates.push(commit[0].commit.committer.date);
-                _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate));
+                lastModDates.push(new Date (commit[0].commit.committer.date));
+                _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', JSON.stringify(lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate)));
               })
               .catch(function onError(error) {
                 console.log('Error fetching from ' + apiPath(templatePath) + ':', error);
