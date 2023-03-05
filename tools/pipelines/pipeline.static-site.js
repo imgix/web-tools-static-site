@@ -143,6 +143,8 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
             // Make routeMap
             _.each(pageOptions.routes, function mapRoute(route, index) {
+              if (route === '/') return;
+              
               if (index === 0) {
                 _.set(routeMap, 'rewrites["' + route + '"]', pageOptions.filename);
               } else {
