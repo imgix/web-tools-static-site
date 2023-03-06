@@ -143,8 +143,6 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
 
             // Make routeMap
             _.each(pageOptions.routes, function mapRoute(route, index) {
-              if (route === '/') return;
-              
               if (index === 0) {
                 _.set(routeMap, 'rewrites["' + route + '"]', pageOptions.filename);
               } else {
@@ -159,7 +157,10 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
                 templatePathArray = [siteBase, templatesDir],
                 templatePath,
                 apiPath = (path) => baseAPIPath + `?path=${path}`,
-                lastModDates = [];
+                lastModDates = [],
+                route = pageOptions.routes[0];
+              
+              if (route === '/') route = '';
 
               if (pageOptions.lastModDate) lastModDates.push(pageOptions.lastModDate);
 
@@ -179,7 +180,7 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               templatePath = templatePathArray.join('/');
 
               // Makes individual API calls for most recent modified dates for jobscore + content and template files for each route
-              if (pageOptions.routes[0] === ('/careers')) {
+              if (route === ('/careers')) {
                 await fetch(jobScoreURL)
                   .then(data => data.json())
                   .then((jobsData) => {
@@ -211,13 +212,13 @@ module.exports = function setupNunjucksPagesPipeline(gulp) {
               .then(data => data.json())
               .then((commit) => {
                 lastModDates.push(new Date (commit[0].commit.committer.date));
-                _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][lastModDate]', JSON.stringify(lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate)));
+                _.set(routeMap, 'sitemapXML["' + route + '"][lastModDate]', JSON.stringify(lastModDates.reduce((date, currentDate)=> date > currentDate ? date : currentDate)));
               })
               .catch(function onError(error) {
                 console.log('Error fetching from ' + apiPath(templatePath) + ':', error);
               });
 
-              _.set(routeMap, 'sitemapXML["' + pageOptions.routes[0] + '"][priority]', pageOptions.priority);
+              _.set(routeMap, 'sitemapXML["' + route + '"][priority]', pageOptions.priority);
             }
           });
 
